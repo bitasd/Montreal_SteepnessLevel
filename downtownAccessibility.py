@@ -1,6 +1,7 @@
 from typing import Tuple
 from build_nx import gdf_to_nx, nx_to_gdf
 from calcSteepnessLevel import calc_SL, sl_signage
+from calcDecay import decay_func
 import networkx as nx
 import geopandas
 import pandas
@@ -10,11 +11,27 @@ geopandas.options.display_precision = 9
 """
 code for computing the travel distance from one-to-many (a point in downtown to all the other points in the network)
 considering different LTS and STEEPNESS LEVEL scenarios
- 
+  
+
+Scenarios:
+
+A1. Current network limited to LTS1
+
+A2. Current network limited to LTS2
+
+B1. Current network limited to LTS1 and SL 5.0
+
+B2. Current network limited to LTS2 and SL 5.0
+
+B3. Current network limited to LTS1 and SL 3.5
+
+C1. Improved network limited to LTS1 and SL 5.0.
+
+C2. Improved network limited to LTS2 and SL 5.0.
 """
-# target=(278628.3641313674, 5033125.887933079),
-# source = (278628.36409999843, 5033125.8878999995)  point in downtown, messounive
-# source = (278529.6318000001, 5032826.068999999)  sub_22
+
+# source = (298960.2725999993, 5040110.302200001)  point in downtown, messounive
+
 
 class NetworkPath:
     def __init__(self, G, source: Tuple):
@@ -56,7 +73,7 @@ if __name__ == '__main__':
     streets = geopandas.read_file(
         # 'C:\\Users\\bitas\\folders\\Research\\Montreal\\mojde\\Accessibility\\summer\\summer_12.shp')
         'C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_test_2950.shp')
-        # 'C:\\Users\\bitas\\folders\\Research\\Montreal\\Analysis\\Accessibility\\_scenario_III\\sub_22.gpkg')
+
 
     streets[['lts', 'lts_c', 'length', 'slope_edit']] = streets[['lts', 'lts_c','length', 'slope_edit']].replace(numpy.nan, 0)
     #TODO: change slope_edit -8888 to 0
@@ -68,23 +85,19 @@ if __name__ == '__main__':
     G = gdf_to_nx(streets)
     net = NetworkPath(G, (298960.2725999993, 5040110.302200001))
     # LTS 4 : minimum distance to other points allowed on the network
-    net.set_shortestPath_value_toNode(G, "lts4_dist")
+    net.set_shortestPath_value_toNode(G, "lts4")
     # LTS 2
     subG_2 = net.subgraphGetter("lts", 2)
-    net.set_shortestPath_value_toNode(subG_2, "lts2_dist")
+    net.set_shortestPath_value_toNode(subG_2, "lts2")
     # LTS 1 & SL 3.5
     subG_3 = net.subgraphGetter("lts", 1, "sl_35", 3.5)
-    net.set_shortestPath_value_toNode(subG_3, "lts1_sl35_dist")
+    net.set_shortestPath_value_toNode(subG_3, "lts1_sl35")
     # LTS 2 & SL 3.5
     subG_4 = net.subgraphGetter("lts", 2, "sl_35", 3.5)
-    net.set_shortestPath_value_toNode(subG_4, "lts2_sl35_dist")
+    net.set_shortestPath_value_toNode(subG_4, "lts2_sl35")
 
-    graph = nx_to_gdf(G)
-    graph[0].to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_test_2950_access.shp')
-    graph[1].to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_test_2950_access1.shp')
+    net_vertices, net_gdf = nx_to_gdf(G)
+    net_gdf["p"] = net_gdf.apply(lambda row : decay_func(row["lts4"], row["lts2_sl35"]))
 
-
-
-
-
-
+    net_vertices.to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_test_2950_access.shp')
+    net_gdf.to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_test_2950_access1.shp')
