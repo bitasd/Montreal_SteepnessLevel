@@ -40,7 +40,7 @@ def sl_signage(slope, sl):
 #
 #
 #     streets[['lts', 'lts_c', 'length', 'slope_edit']] = streets[['lts', 'lts_c', 'length', 'slope_edit']].replace(numpy.nan, 0)
-#     # TODO: use slope_edit -8888 as 0.0 slope
+
 #     #calculate steepness level and set the minimum valid SL for each line
 #     streets[['sl_35', 'sl_5']] = streets.apply(lambda row: pandas.Series(calc_SL(row['length'], row['slope_edit'])),
 #                                        axis=1)

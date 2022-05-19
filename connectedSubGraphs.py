@@ -1,7 +1,9 @@
 from graph_to_nx import gdf_to_nx, nx_to_gdf
 import networkx as nx
 import geopandas
-
+"""
+Script to return connected subGraphs within the street network
+"""
 geopandas.options.display_precision = 9
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':

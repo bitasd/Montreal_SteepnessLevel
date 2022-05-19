@@ -29,7 +29,7 @@ class NetworkPath:
         self.G = G
         self.source = source
 
-    def subgraphGetter(self, attr_lts: str, cutoff_lts: int, attr_sl: str = None, cutoff_sl: int = None)->nx.MultiDiGraph:
+    def subgraphGetter(self, attr_lts: str, cutoff_lts: int, attr_sl: str = None, cutoff_sl: float = None)->nx.MultiDiGraph:
         """
         :param attr_lts: name of the lts related field (String)
         :param cutoff_lts: the cutoff value for lts (int)
@@ -39,7 +39,7 @@ class NetworkPath:
         """
         if attr_lts and attr_sl:
             SG = nx.MultiDiGraph([(u,v,d) for u,v,d in self.G.edges(data=True) if d[attr_lts] <= cutoff_lts and
-                                d[attr_sl]==cutoff_sl])
+                                d[attr_sl]<= cutoff_sl])
         elif attr_lts and not attr_sl:
             SG = nx.MultiDiGraph([(u, v, d) for u, v, d in self.G.edges(data=True) if d[attr_lts] <= cutoff_lts])
         return SG
@@ -120,11 +120,12 @@ if __name__ == '__main__':
     #
     # C2. Improved network limited to LTS2 and SL 5.0.
 
-    net_vertices, net_gdf = nx_to_gdf(G)
+    net_vertices, net_links = nx_to_gdf(G)
     for sc in ["lts1", "lts2", "lts1_sl5", "lts2_sl5", "lts1_sl3.5", "lts2_sl3.5"]:
         p = f"p_{sc}"
-        net_gdf[p] = net_gdf.apply(lambda row : decay_func(row["lts4"], row[sc]))
+        print(p)
+        net_vertices[p] = net_vertices.apply(lambda row : decay_func(row["lts4"], row[sc]), axis =1)
 
     net_vertices.to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\test_p1.shp')
-    net_gdf.to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\test_l1.shp')
+    net_links.to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\test_l1.shp')
 
