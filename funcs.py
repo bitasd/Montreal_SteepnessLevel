@@ -3,7 +3,7 @@ from shapely.geometry import LineString
 """
 code to calculate accessibility decay based on detour from the shortest path
 """
-def decay_func( L_lts4, Lijk):
+def decay_func( L_lts4, Lijk):  # add 8000 meter cut-off here
     """
     :param L_lts4: shortest path in meters from the origin to the current point no restriction on LTS or Steepness Level
     :param Lijk: shortest path in meters with restriction on LTS and LS
@@ -18,8 +18,8 @@ def decay_func( L_lts4, Lijk):
 
             L_lts4, Lijk = L_lts4/1609.34, Lijk/1609.34  # transform to miles
             l1 = min(4, 1.2 * L_lts4)  # d1
-            l2 = 1.33 * L_lts4   # d2
-            l3 = 2 * L_lts4  # d3
+            l2 = 1.2 * L_lts4   # d2   changed from 1.33
+            l3 = 1.6 * L_lts4  # d3   changed from 2
 
             if Lijk <= l1:
                 return 1
@@ -42,3 +42,10 @@ def make_route_line(coords):
             return LineString(coords)
         else:
             return None
+
+
+def short_segments_smoothen(length: float, attr):   # attr can be lts or slope
+    if length<51:
+        return 0
+    else:
+        return attr

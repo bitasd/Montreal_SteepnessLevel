@@ -11,6 +11,9 @@ B3. Current network limited to LTS1 and SL 3.5
 C1. Improved network limited to LTS1 and SL 5.0.
 C2. Improved network limited to LTS2 and SL 5.0.
 
+* “Improved” network means adding cycle track on Cote des Neiges / Guy from the southern end of Guy (at William) to the
+northern end of Cote des Neiges (at Jean Talon). Take care to ensure that there are network connections to intersecting
+streets
 
 read the streets file from a shapefile, geopackage might throw a multipart error
 """
@@ -18,7 +21,7 @@ read the streets file from a shapefile, geopackage might throw a multipart error
 from typing import Tuple
 from build_nx import gdf_to_nx, nx_to_gdf
 from calcSteepnessLevel import calc_SL, sl_signage
-from funcs import decay_func, make_route_line
+from funcs import decay_func, make_route_line, short_segments_smoothen
 import networkx as nx
 import geopandas
 import pandas
@@ -50,7 +53,6 @@ class NetworkPath:
         return SG
 
     # def set_shortestPath_value_toNode(self, subG: nx.MultiDiGraph, scenario_name: str):
-    #     ##TODO: store the path (as a lineString) from the source to the destination point in a separate layer.
     #     """
     #     :param subG: input subgraph with restricted links
     #     :param scenario_name: scenario name i.e. "lts2_sl35"
@@ -70,7 +72,7 @@ class NetworkPath:
 
 if __name__ == '__main__':
     streets = geopandas.read_file(
-        # 'C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_toAll.shp')
+        # 'C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_test.shp')
     'C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_ToAll_2.shp')
     print("number of lines: ", len(streets))
 
@@ -78,8 +80,8 @@ if __name__ == '__main__':
     streets['slope_edit'] = streets['slope_edit'].replace(-8888, 0)
     # streets['slope_edit'] = streets['slope_edit'].replace([-8888, numpy.nan], 0)  # or
 
+
     # Getting the source point in the network (Peel st & Messounive)
-    # source_coords = list(streets[streets['fid']==613]['geometry'].item().coords)[0]
     source_coords = list(streets[streets['ID_TRC_int'] == 1260415]['geometry'].item().coords)[-1]
 
     print("Computing Steepness Level...")
@@ -146,7 +148,7 @@ if __name__ == '__main__':
     nx.set_node_attributes(G, dist_dict, scenario_name)
     nx.set_node_attributes(G, path_dict, f"{'r_' + scenario_name}")
 
-    #
+
     print("Computing Scenario B4...")
     # B4. Current network limited to LTS1 and SL 3.5
     scenario_name = "lts2_sl3.5"
@@ -156,19 +158,32 @@ if __name__ == '__main__':
     nx.set_node_attributes(G, dist_dict, scenario_name)
     nx.set_node_attributes(G, path_dict, f"{'r_' + scenario_name}")
 
+
+    print("Computing Scenario C1...")
     # C1. Improved network limited to LTS1 and SL 5.0.
-    # subG_B3 = net.subgraphGetter("lts_improved", 1, "signed_sl", 5)
-    #
+    scenario_name = "imLts1_5"
+    subG_C1 = net.subgraphGetter("lts_imp", 1, "signed_sl", 5)
+    dist_dict, path_dict = nx.single_source_dijkstra(subG_C1, source_coords, target=None, weight="length")
+    nx.set_node_attributes(G, dist_dict, scenario_name)
+    nx.set_node_attributes(G, path_dict, f"{'r_' + scenario_name}")
+
+
+    print("Computing Scenario C2...")
     # C2. Improved network limited to LTS2 and SL 5.0.
+    scenario_name = "imLts2_5"
+    subG_C2 = net.subgraphGetter("lts_imp", 2, "signed_sl", 5)
+    dist_dict, path_dict = nx.single_source_dijkstra(subG_C2, source_coords, target=None, weight="length")
+    nx.set_node_attributes(G, dist_dict, scenario_name)
+    nx.set_node_attributes(G, path_dict, f"{'r_' + scenario_name}")
+
 
     net_vertices, net_links = nx_to_gdf(G)
-    del net_links["fid"]
+    # del net_links["fid"]
     net_links.to_file('C:\\Users\\bitas\\folders\\Research\\Montreal\\codes\\accessibility\\data\\downtown_l.gpkg', driver="GPKG")
 
 
-    # net_vertices['pid'] = net_vertices.index
 
-    for sc in ["lts4","lts1", "lts2", "lts1_sl5", "lts2_sl5", "lts1_sl3.5", "lts2_sl3.5"]:
+    for sc in ["lts4","lts1", "lts2", "lts1_sl5", "lts2_sl5", "lts1_sl3.5", "lts2_sl3.5", "imLts1_5", "imLts2_5"]:
         p = f"p_{sc}"
         r = f"r_{sc}"
         print(p)

@@ -1,3 +1,5 @@
+"""functions for transforming spatial data into network and vice versa (with more particular details)"""
+
 import networkx as nx
 import geopandas
 from shapely.geometry import Point

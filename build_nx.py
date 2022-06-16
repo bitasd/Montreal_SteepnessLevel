@@ -1,3 +1,8 @@
+"""
+functions for transforming spatial data into network and vice versa (with more particular details)
+segments shorter than 50m have been exempted from LTS and SL criteria
+"""
+
 import networkx as nx
 import geopandas
 from shapely.geometry import Point
@@ -8,7 +13,7 @@ def gdf_to_nx(gdf_network):
     net = nx.MultiDiGraph()
     net.graph['crs'] = gdf_network.crs
     # fields = list(gdf_network.columns)
-    fields = ['ID_TRC_int', 'CLASSE', 'SENS_CIR', 'slope', 'slope_edit', 'length', 'lts', 'lts_negD', 'lts_c', 'umbrell_id', 'geometry', 'signed_sl', 'fid', 'TYPE_VOIE'] #
+    fields = ['ID_TRC_int', 'CLASSE', 'SENS_CIR', 'slope', 'slope_edit', 'length', 'lts', 'lts_negD', 'lts_c', 'umbrell_id', 'geometry', 'signed_sl', '_id_', 'TYPE_VOIE', 'lts_improv'] #
 
     for index, row in gdf_network.iterrows():
         try:
@@ -28,12 +33,20 @@ def gdf_to_nx(gdf_network):
         if attributes['TYPE_VOIE'] in [5,6,7]:  # multi-purpose trail, sidewalk-level path, path outside way
             # add path
             attributes['lts_final'] = attributes['lts']
+            if attributes['length'] < 50:
+                attributes['lts_final'] = 0
+
+            attributes['lts_imp'] = min(attributes['lts_improv'] , attributes['lts_final'])
             net.add_edge(first, last, **attributes)
 
             # add reversed edge
             attr_rev['slope_edit'] = attributes['slope_edit'] * (-1)
             attr_rev['signed_sl'] = attributes['signed_sl'] * (-1)
             attr_rev['lts_final'] = attributes['lts']
+            if attributes['length'] < 50:
+                attr_rev['lts_final'] = 0
+
+            attr_rev['lts_imp'] = min(attr_rev['lts_improv'], attr_rev['lts_final'])
             net.add_edge(last, first, **attr_rev)
 
         else: #
@@ -43,15 +56,27 @@ def gdf_to_nx(gdf_network):
                 attr_rev['slope_edit'] = attributes['slope_edit'] * (-1)
                 attr_rev['signed_sl'] = attributes['signed_sl'] * (-1)
                 attr_rev['lts_final'] = attributes['lts']
+                if attributes['length'] < 50:
+                    attr_rev['lts_final'] = 0
+
+                attr_rev['lts_imp'] = min(attr_rev['lts_improv'], attr_rev['lts_final'])
                 net.add_edge(last, first, **attr_rev)
 
                 if attributes['lts_c'] != -9999:
                     # add an edge w contraflow lane
                     attributes['lts_final'] = attributes['lts_c']
+                    if attributes['length'] < 50:
+                        attributes['lts_final'] = 0
+
+                    attributes['lts_imp'] = min(attributes['lts_improv'], attributes['lts_final'])
                     net.add_edge(first, last, **attributes)
 
             elif attributes['SENS_CIR'] == 1:
                 attributes['lts_final'] = attributes['lts']
+                if attributes['length'] < 50:
+                    attributes['lts_final'] = 0
+
+                attributes['lts_imp'] = min(attributes['lts_improv'], attributes['lts_final'])
                 net.add_edge(first, last, **attributes)
 
                 if attributes['lts_c'] != -9999:
@@ -59,11 +84,19 @@ def gdf_to_nx(gdf_network):
                     attr_rev['slope_edit'] = attributes['slope_edit'] * (-1)
                     attr_rev['signed_sl'] = attributes['signed_sl'] * (-1)
                     attr_rev['lts_final'] = attributes['lts_c']
+                    if attr_rev['length'] < 50:
+                        attr_rev['lts_final'] = 0
+
+                    attr_rev['lts_imp'] = min(attr_rev['lts_improv'], attr_rev['lts_final'])
                     net.add_edge(last, first, **attr_rev)
 
             elif attributes['SENS_CIR'] == 0:
                 # add edge
                 attributes['lts_final'] = attributes['lts']
+                if attributes['length'] < 50:
+                    attributes['lts_final'] = 0
+
+                attributes['lts_imp'] = min(attributes['lts_improv'], attributes['lts_final'])
                 net.add_edge(first, last, **attributes)
 
                 # add reversed edge
@@ -76,12 +109,19 @@ def gdf_to_nx(gdf_network):
                 else:  # symmetric situation
                     attr_rev['lts_final'] = attributes['lts']
 
+
+                if attr_rev['length'] < 50:
+                    attr_rev['lts_final'] = 0
+                attr_rev['lts_imp'] = min(attr_rev['lts_improv'], attr_rev['lts_final'])
                 net.add_edge(last, first, **attr_rev)
 
             else:
                 print('elsed out')
                 attr_rev['lts_final'] = attributes['lts']
+                if attr_rev['length'] < 50:
+                    attr_rev['lts_final'] = 0
 
+                attr_rev['lts_imp'] = min(attr_rev['lts_improv'], attr_rev['lts_final'])
                 net.add_edge(last, first, **attr_rev)
 
     return net
